@@ -93,35 +93,30 @@ class RelativeTimeAgo
 
     # Yesterday: "Saved yesterday at 8:15am"
     # This week: "Saved Thursday at 8:15am"
-    else if day = @relativeWeekday()
-      "#{day} at #{@formatTime()}"
+    
+    # else if day = @relativeWeekday()
+    #   "#{day} at #{@formatTime()}"
 
     # Older: "Saved on Dec 15"
     else
-      "on #{@formatDate()}"
+      # "on #{@formatDate()}"
+      "#{@formatFutureDate()}"
 
   timeElapsed: ->
-    ms  = new Date().getTime() - @date.getTime()
-    sec = Math.round ms  / 1000
-    min = Math.round sec / 60
-    hr  = Math.round min / 60
+    ms  = @date.getTime() -  new Date().getTime() - 
+    diff = Math.round ms  / 1000
+    seconds = diff % 60
+    minutes = ( ( diff - seconds ) / 60 ) % 60
+    hours = ( ( ( ( diff - ( minutes * 60 ) ) - seconds ) / 60 ) / 60 ) % 24
 
-    if ms < 0
+    if ms > 0
       null
-    else if sec < 10
-      "a second"
-    else if sec < 45
-      "#{sec} seconds"
-    else if sec < 90
-      "a minute"
-    else if min < 45
-      "#{min} minutes"
-    else if min < 90
-      "an hour"
-    else if hr < 24
-      "#{hr} hours"
-    else
-      null
+    else if diff >= -3600
+      "#{minutes - 1}m"
+    else if diff < -3600 and minutes == 0
+      "#{hours}h"
+    else if diff < -3600 and minutes != 0
+      "#{hours}h#{minutes}m"
 
   relativeWeekday: ->
     daysPassed = @calendarDate.daysPassed()
@@ -139,6 +134,23 @@ class RelativeTimeAgo
     format = "%b %e"
     format += ", %Y" unless @calendarDate.occursThisYear()
     strftime @date, format
+  
+  formatFutureDate: ->
+    ms  =  @date.getTime() - new Date().getTime()
+    diff = Math.round ms  / 1000
+    seconds = diff % 60
+    minutes = ( ( diff - seconds ) / 60 ) % 60
+    hours = ( ( ( ( diff - ( minutes * 60 ) ) - seconds ) / 60 ) / 60 ) % 24
+    
+    if diff > 3600 and minutes != 0
+      "#{hours}h#{minutes}m"
+    else if diff > 3600 and minutes == 0
+      "#{hours}h"
+    else if diff > 60
+      "#{minutes + 1}m"
+    else if diff > -60
+      "#{seconds}s"
+    
 
   formatTime: ->
     strftime @date, '%l:%M%P'
@@ -192,7 +204,7 @@ document.addEventListener "DOMContentLoaded", ->
     event = document.createEvent "Events"
     event.initEvent "time:elapse", true, true
     document.dispatchEvent event
-  , 60 * 1000
+  , 1000
 
 # Public API
 @LocalTime = {strftime, relativeTimeAgo}
